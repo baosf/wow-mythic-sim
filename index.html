@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大秘境组队模拟器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 50%, #16213e 100%); min-height: 100vh; color: #e0e0e0; padding: 20px; overflow-x: hidden; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { text-align: center; padding: 25px 0; background: linear-gradient(90deg, rgba(255,215,0,0.1), rgba(255,140,0,0.1)); border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,215,0,0.3); position: relative; }
+    h1 { font-size: 2.2em; background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .gold-display { position: absolute; top: 15px; right: 20px; background: linear-gradient(135deg, #ffd700, #b8860b); color: #1a1a2e; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 1.1em; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; margin-bottom: 25px; align-items: end; }
+    .control-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+    label { display: block; margin-bottom: 8px; color: #ffd700; font-weight: bold; font-size: 0.9em; }
+    select, input[type="range"] { width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; color: #fff; font-size: 1em; }
+    .level-display { text-align: center; font-size: 2em; color: #ffd700; font-weight: bold; margin-top: 8px; }
+    .start-btn { padding: 15px 40px; font-size: 1.2em; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 10px; color: #1a1a2e; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+    .start-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 30px rgba(255,215,0,0.5); }
+    .start-btn:disabled { background: #555; cursor: not-allowed; box-shadow: none; }
+
+    /* 副本机制面板 */
+    .mechanic-panel { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; }
+    .mechanic-panel-title { text-align: center; color: #ffd700; font-weight: bold; margin-bottom: 12px; font-size: 1em; }
+    .mechanic-list { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    .mechanic-badge { padding: 6px 16px; border-radius: 20px; font-size: 0.85em; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+    .mechanic-badge.required { background: rgba(231,76,60,0.2); border: 1px solid rgba(231,76,60,0.5); color: #e74c3c; }
+    .mechanic-badge.matched { background: rgba(46,204,113,0.2); border: 1px solid rgba(46,204,113,0.5); color: #2ecc71; }
+    .mechanic-badge.missing { background: rgba(231,76,60,0.2); border: 1px solid rgba(231,76,60,0.5); color: #e74c3c; }
+    .mechanic-summary { text-align: center; margin-top: 10px; font-size: 0.9em; }
+    .mechanic-bonus { color: #2ecc71; font-weight: bold; }
+    .mechanic-penalty { color: #e74c3c; font-weight: bold; }
+
+    /* 队伍区域 */
+    .party-section { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; margin-bottom: 25px; align-items: start; }
+    .party-box { background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); min-height: 450px; }
+    .party-title { text-align: center; font-size: 1.3em; color: #ffd700; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid rgba(255,215,0,0.3); }
+#successRateBar { text-align: center; margin-bottom: 12px; font-size: 0.95em; min-height: 24px; }
+.sr-label { color: #aaa; margin-right: 8px; }
+.sr-value { font-weight: bold; font-size: 1.2em; }
+.sr-bar-wrap { display: inline-block; width: 140px; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; vertical-align: middle; margin: 0 8px; overflow: hidden; }
+.sr-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s, background 0.3s; }
+.sr-detail { color: #888; font-size: 0.82em; margin-top: 3px; }
+
+    .player-slot { background: rgba(0,0,0,0.3); border: 2px dashed rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; margin-bottom: 10px; min-height: 75px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; }
+    .player-slot.filled { border-style: solid; border-color: rgba(255,215,0,0.5); }
+    .player-slot.dragover { background: rgba(255,215,0,0.1); border-color: #ffd700; transform: scale(1.02); }
+    .player-slot.protagonist-slot { border-color: rgba(255,215,0,0.6); background: rgba(255,215,0,0.05); }
+    .player-slot.protagonist-slot.filled { border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.2); }
+    .empty-slot-text { color: rgba(255,255,255,0.3); font-size: 0.9em; }
+    .player-card { width: 100%; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 12px; cursor: grab; transition: all 0.3s; border-left: 4px solid; position: relative; }
+    .player-card:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .player-card.dragging { opacity: 0.5; cursor: grabbing; }
+    .player-card.tank { border-color: #4a90d9; }
+    .player-card.healer { border-color: #2ecc71; }
+    .player-card.dps { border-color: #e74c3c; }
+    .player-card.protagonist { border-color: #ffd700; background: rgba(255,215,0,0.1); box-shadow: 0 0 10px rgba(255,215,0,0.15); }
+    .player-card .name { font-weight: bold; font-size: 1.1em; margin-bottom: 3px; }
+    .player-card .spec { color: #888; font-size: 0.85em; margin-bottom: 6px; }
+    .player-card .stats { display: flex; gap: 12px; font-size: 0.8em; margin-bottom: 6px; }
+    .player-card .ilvl { font-weight: bold; }
+    .ilvl-orange { color: #ff8000; text-shadow: 0 0 5px rgba(255,128,0,0.5); }
+    .ilvl-purple { color: #a335ee; }
+    .ilvl-blue { color: #0070dd; }
+    .player-card .traits { display: flex; flex-wrap: wrap; gap: 4px; }
+    .trait-tag {
+      padding: 2px 6px; border-radius: 3px; font-size: 0.7em;
+      cursor: help;
+      position: relative;
+    }
+    .trait-tag.positive { background: rgba(46,204,113,0.3); color: #2ecc71; }
+    .trait-tag.negative { background: rgba(231,76,60,0.3); color: #e74c3c; }
+    .trait-tag.neutral { background: rgba(155,89,182,0.3); color: #9b59b6; }
+    .trait-tag.joke { background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3); }
+    .trait-tag.mechanic-match { background: rgba(255,215,0,0.2); color: #ffd700; border: 1px solid rgba(255,215,0,0.4); }
+    .trait-tag.protagonist-exclusive { background: rgba(255,215,0,0.2); color: #ffd700; border: 1px dashed rgba(255,215,0,0.5); }
+
+    /* Tooltip */
+    .trait-tag:hover::after {
+      content: attr(data-desc);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.95);
+      border: 1px solid rgba(255,215,0,0.4);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75em;
+      white-space: nowrap;
+      z-index: 100;
+      max-width: 220px;
+      white-space: normal;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    .trait-tag:hover::before {
+      content: '';
+      position: absolute;
+      bottom: calc(100% + 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-bottom-color: rgba(255,215,0,0.4);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .center-controls { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 15px; padding-top: 10px; }
+    .arrow { font-size: 2em; color: rgba(255,215,0,0.5); }
+    .refresh-btn { padding: 10px 20px; background: linear-gradient(135deg, #3498db, #2980b9); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-weight: bold; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; }
+    .refresh-btn:hover:not(:disabled) { transform: scale(1.03); box-shadow: 0 0 20px rgba(52,152,219,0.5); }
+    .refresh-btn:disabled { background: #555; cursor: not-allowed; }
+    .gold-cost { font-size: 0.8em; color: #ffd700; }
+    .drag-hint { text-align: center; color: rgba(255,255,255,0.4); font-size: 0.8em; }
+
+    /* 主角面板 */
+    .protagonist-panel {
+      background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,140,0,0.05));
+      border: 2px solid rgba(255,215,0,0.4);
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 10px;
+      width: 100%;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .protagonist-panel.locked {
+      border-color: rgba(255,215,0,0.8);
+      box-shadow: 0 0 20px rgba(255,215,0,0.15), inset 0 0 15px rgba(255,215,0,0.03);
+    }
+    .protagonist-title {
+      text-align: center;
+      color: #ffd700;
+      font-weight: bold;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .protagonist-name-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .protagonist-name-input {
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 6px;
+      color: #ffd700;
+      font-size: 0.95em;
+      font-family: 'Microsoft YaHei', sans-serif;
+    }
+    .protagonist-name-input::placeholder { color: rgba(255,215,0,0.4); }
+    .protagonist-name-input:focus { outline: none; border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+    .protagonist-name-input.locked { background: rgba(0,0,0,0.2); border-color: rgba(255,215,0,0.15); color: rgba(255,215,0,0.5); cursor: not-allowed; }
+    .protagonist-name-input.locked:focus { box-shadow: none; }
+    .random-trait-btn {
+      padding: 8px 12px;
+      background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.85em;
+      white-space: nowrap;
+      transition: all 0.3s;
+    }
+    .random-trait-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(155,89,182,0.5); }
+    .random-trait-btn:disabled, .random-trait-btn.locked { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+    .random-trait-btn:disabled:hover, .random-trait-btn.locked:hover { transform: none; box-shadow: none; }
+    .protagonist-card {
+      background: rgba(0,0,0,0.4);
+      border: 2px solid rgba(255,215,0,0.5);
+      border-radius: 8px;
+      padding: 12px;
+      position: relative;
+    }
+    .protagonist-badge {
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a1a2e;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.65em;
+      font-weight: bold;
+    }
+    .protagonist-card .name { font-weight: bold; font-size: 1.1em; color: #ffd700; margin-bottom: 3px; }
+    .protagonist-card .spec { color: #888; font-size: 0.85em; margin-bottom: 6px; }
+    .protagonist-card .stats { display: flex; gap: 12px; font-size: 0.8em; margin-bottom: 6px; }
+    .protagonist-card .traits { display: flex; flex-wrap: wrap; gap: 4px; }
+    .protagonist-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .protagonist-assign-btn {
+      flex: 1;
+      padding: 8px;
+      background: rgba(255,215,0,0.15);
+      border: 1px solid rgba(255,215,0,0.4);
+      border-radius: 6px;
+      color: #ffd700;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.8em;
+      transition: all 0.3s;
+    }
+    .protagonist-assign-btn:hover { background: rgba(255,215,0,0.25); transform: scale(1.02); }
+    .protagonist-assign-btn.active { background: rgba(255,215,0,0.3); border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+    .protagonist-ilvl { color: #ffd700; font-weight: bold; font-size: 1em; text-align: center; margin-bottom: 6px; }
+    .protagonist-ilvl-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-bottom: 8px; }
+    .protagonist-ilvl-fill { height: 100%; background: linear-gradient(90deg, #ffd700, #ff8c00); border-radius: 2px; transition: width 0.5s; }
+    .no-protagonist-msg { text-align: center; color: rgba(255,255,255,0.3); font-size: 0.85em; padding: 10px; }
+    .protagonist-card.locked { cursor: grab; border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+    .protagonist-card.locked:active { cursor: grabbing; }
+    .protagonist-reset-btn {
+      width: 100%; padding: 6px; margin-top: 8px;
+      background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.4);
+      border-radius: 5px; color: #e74c3c; cursor: pointer;
+      font-size: 0.8em; font-weight: bold; transition: all 0.3s;
+    }
+    .protagonist-reset-btn:hover { background: rgba(231,76,60,0.25); transform: scale(1.02); }
+
+    /* 开始游戏遮罩 */
+    .start-game-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center;
+      flex-direction: column; z-index: 2000;
+    }
+    .start-game-overlay.active { display: flex; animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .start-game-box {
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,215,0,0.4);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      max-width: 420px;
+    }
+    .start-game-title { font-size: 1.8em; color: #ffd700; margin-bottom: 20px; }
+    .start-game-name-label { color: #aaa; font-size: 1em; margin-bottom: 8px; }
+    .start-game-name-input {
+      width: 100%; padding: 12px 16px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 8px;
+      color: #ffd700;
+      font-size: 1.2em;
+      font-family: 'Microsoft YaHei', sans-serif;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .start-game-name-input::placeholder { color: rgba(255,215,0,0.4); }
+    .start-game-name-input:focus { outline: none; border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.2); }
+    .start-game-btn {
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      border: none; border-radius: 10px;
+      color: #1a1a2e; cursor: pointer;
+      font-weight: bold; font-size: 1.2em;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(255,215,0,0.3);
+    }
+    .start-game-btn:hover { transform: scale(1.05); box-shadow: 0 5px 30px rgba(255,215,0,0.5); }
+    .start-game-hint { color: rgba(255,255,255,0.4); font-size: 0.8em; margin-top: 15px; }
+
+    /* 战斗动画 */
+    .battle-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; }
+    .battle-overlay.active { display: flex; animation: fadeIn2 0.5s; }
+    @keyframes fadeIn2 { from { opacity: 0; } to { opacity: 1; } }
+    .battle-title { font-size: 2.5em; color: #ffd700; margin-bottom: 15px; text-shadow: 0 0 30px rgba(255,215,0,0.5); }
+    .battle-mechanics { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .battle-mech { padding: 6px 14px; border-radius: 15px; font-size: 0.9em; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.4); color: #e74c3c; }
+    .battle-mech.success { background: rgba(46,204,113,0.15); border-color: rgba(46,204,113,0.4); color: #2ecc71; }
+    .battle-animation { width: 250px; height: 250px; position: relative; margin-bottom: 30px; }
+    .battle-circle { width: 100%; height: 100%; border: 4px solid #ffd700; border-radius: 50%; position: absolute; animation: pulse 2s ease-in-out infinite; }
+    .battle-circle:nth-child(2) { width: 75%; height: 75%; top: 12.5%; left: 12.5%; animation-delay: 0.4s; border-color: #ff8c00; }
+    .battle-circle:nth-child(3) { width: 50%; height: 50%; top: 25%; left: 25%; animation-delay: 0.8s; border-color: #e74c3c; }
+    .battle-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4em; animation: bounce 0.8s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.6; } }
+    @keyframes bounce { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -65%) scale(1.15); } }
+    .battle-text { color: #fff; font-size: 1.3em; text-align: center; }
+    .battle-power { color: #aaa; font-size: 0.9em; margin-top: 8px; }
+
+    /* 结算面板 */
+    .settlement { display: none; text-align: center; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 2px solid rgba(255,215,0,0.3); max-width: 520px; }
+    .settlement.active { display: block; animation: slideUp 0.5s; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+    .settlement-icon { font-size: 5em; margin-bottom: 15px; }
+    .settlement-title { font-size: 2em; margin-bottom: 15px; }
+    .settlement-title.success { color: #2ecc71; }
+    .settlement-title.fail { color: #e74c3c; }
+    .settlement-title.quit { color: #e67e22; }
+    .settlement-details { color: #aaa; margin-bottom: 15px; line-height: 1.8; font-size: 1em; }
+    .settlement-mechs { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .settlement-mech { padding: 4px 12px; border-radius: 12px; font-size: 0.85em; }
+    .settlement-mech.ok { background: rgba(46,204,113,0.2); color: #2ecc71; border: 1px solid rgba(46,204,113,0.4); }
+    .settlement-mech.fail { background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid rgba(231,76,60,0.4); }
+    .protagonist-upgrade { background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 0.9em; }
+    .protagonist-upgrade .ilvl-change { color: #ffd700; font-weight: bold; font-size: 1.1em; }
+    .gold-change { font-size: 1.6em; margin: 10px 0; }
+    .gold-change.positive { color: #2ecc71; }
+    .gold-change.negative { color: #e74c3c; }
+    .settlement-btn { padding: 12px 30px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 8px; color: #1a1a2e; cursor: pointer; font-weight: bold; font-size: 1.1em; transition: all 0.3s; }
+    .settlement-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+
+    /* 统计栏 */
+    .stats-bar { display: flex; justify-content: center; gap: 40px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 1.8em; font-weight: bold; color: #ffd700; }
+    .stat-label { font-size: 0.85em; color: #888; margin-top: 5px; }
+
+    .dungeon-desc { text-align: center; color: #888; font-size: 0.85em; margin-top: 5px; }
+
+    /* 队伍中的主角标记 */
+    .player-slot.protagonist-in-slot { border-color: #ffd700; background: rgba(255,215,0,0.05); }
+    .slot-protagonist-badge {
+      position: absolute; top: -6px; right: 6px;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a1a2e; padding: 1px 6px; border-radius: 8px;
+      font-size: 0.6em; font-weight: bold;
+    }
+
+    @media (max-width: 1000px) {
+      .party-section { grid-template-columns: 1fr; }
+      .center-controls { flex-direction: row; padding-top: 0; flex-wrap: wrap; }
+      .controls { grid-template-columns: 1fr 1fr; }
+      .protagonist-panel { width: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚔️ 大秘境组队模拟器 ⚔️</h1>
+      <div class="gold-display">💰 <span id="goldAmount">100</span> 金币</div>
+    </header>
+    
+    <div class="controls">
+      <div class="control-group">
+        <label>🏰 选择副本</label>
+        <select id="dungeonSelect">
+          <option value="algethar">艾杰斯亚学院</option>
+          <option value="brackenhide">节点希纳斯</option>
+          <option value="neltharus">迈萨拉洞窟</option>
+          <option value="nokhud">风行者之塔</option>
+          <option value="azure_vault">魔导师平台</option>
+          <option value="halls_infusion">执政官之座</option>
+          <option value="ruby_life">通天峰</option>
+          <option value="uldaman">萨隆矿坑</option>
+        </select>
+        <div class="dungeon-desc" id="dungeonDesc"> interrupt / dispel / cc </div>
+      </div>
+      <div class="control-group">
+        <label>📊 选择层数</label>
+        <input type="range" id="levelSlider" min="2" max="30" value="10">
+        <div class="level-display">+<span id="levelDisplay">10</span></div>
+      </div>
+      <button class="start-btn" id="startBtn" disabled onclick="startDungeon()">⚔️ 开始副本</button>
+    </div>
+
+    <div class="mechanic-panel" id="mechanicPanel">
+      <div class="mechanic-panel-title">🎯 队伍机制匹配度</div>
+      <div class="mechanic-list" id="mechanicList"></div>
+      <div class="mechanic-summary" id="mechanicSummary"></div>
+    </div>
+    
+    <div class="party-section">
+      <div class="party-box">
+        <div class="party-title">🛡️ 你的队伍</div>
+        <div id="successRateBar" style="text-align:center; margin-bottom:12px; font-size:0.95em; color:#aaa; min-height:24px;"></div>
+        <div class="player-slot" data-slot="tank" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"><span class="empty-slot-text">🛡️ 坦克位 (拖入队友)</span></div>
+        <div class="player-slot" data-slot="healer" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"><span class="empty-slot-text">💚 治疗位 (拖入队友)</span></div>
+        <div class="player-slot" data-slot="dps1" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"><span class="empty-slot-text">⚔️ DPS位 (拖入队友)</span></div>
+        <div class="player-slot" data-slot="dps2" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"><span class="empty-slot-text">⚔️ DPS位 (拖入队友)</span></div>
+        <div class="player-slot" data-slot="dps3" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"><span class="empty-slot-text">⚔️ DPS位 (拖入队友)</span></div>
+      </div>
+      
+      <div class="center-controls">
+        <div class="arrow">➜</div>
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshPlayers()">
+          🔄 刷新队员
+          <span class="gold-cost">(-5💰)</span>
+        </button>
+        <div class="drag-hint">👆 拖拽到左侧加入队伍<br>点击队员可移除</div>
+
+        <!-- 主角面板 -->
+        <div class="protagonist-panel" id="protagonistPanel">
+          <div class="protagonist-title" id="protagonistTitle">⭐ 主角队员 ⭐</div>
+          <div class="protagonist-name-row">
+            <input type="text" class="protagonist-name-input" id="protagonistNameInput" placeholder="输入主角名字..." maxlength="8">
+            <button class="random-trait-btn" onclick="randomizeProtagonist()">🎲 随机特性</button>
+          </div>
+          <div class="protagonist-ilvl">
+            <span id="protagonistIlvlText">装等: 240</span>
+            <div class="protagonist-ilvl-bar"><div class="protagonist-ilvl-fill" id="protagonistIlvlFill" style="width:0%"></div></div>
+          </div>
+          <div id="protagonistCardArea">
+            <div class="no-protagonist-msg">输入姓名 → 点击"随机特性" →<br>拖入左侧任意位置！</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="party-box">
+        <div class="party-title">📋 可选队员</div>
+        <div id="availablePlayers"></div>
+      </div>
+    </div>
+    
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-value" id="totalRuns">0</div><div class="stat-label">总挑战</div></div>
+      <div class="stat-item"><div class="stat-value" id="successRate">0%</div><div class="stat-label">成功率</div></div>
+      <div class="stat-item"><div class="stat-value" id="highestKey">+0</div><div class="stat-label">最高层数</div></div>
+    </div>
+  </div>
+  
+
+  <!-- 战斗动画 -->
+  <div class="battle-overlay" id="battleOverlay">
+    <div class="battle-title" id="battleTitle">⚔️ 挑战中 ⚔️</div>
+    <div class="battle-mechanics" id="battleMechanics"></div>
+    <div class="battle-animation">
+      <div class="battle-circle"></div>
+      <div class="battle-circle"></div>
+      <div class="battle-circle"></div>
+      <div class="battle-icon">⚔️</div>
+    </div>
+    <div class="battle-text" id="battleText">正在进入副本...</div>
+    <div class="battle-power" id="battlePower"></div>
+  </div>
+  
+  <!-- 结算面板 -->
+  <div class="settlement" id="settlement">
+    <div class="settlement-icon" id="settlementIcon">🏆</div>
+    <div class="settlement-title" id="settlementTitle">挑战成功！</div>
+    <div class="settlement-mechs" id="settlementMechs"></div>
+    <div class="protagonist-upgrade" id="protagonistUpgrade" style="display:none;"></div>
+    <div class="settlement-details" id="settlementDetails"></div>
+    <div class="gold-change" id="goldChange">+100 💰</div>
+    <button class="settlement-btn" onclick="closeSettlement()">继续挑战</button>
+  </div>
+
+<script>
+// ==================== 副本数据 - 10.0 巨龙时代 第一赛季 ====================
+const DUNGEONS = {
+  'algethar': { name: '艾杰斯亚学院', baseTime: 36, baseReq: 100, tyrannical: 1.20, fortified: 1.15, mechanics: ['interrupt', 'cc'], mechanicDesc: '🔇打断需求高 | 🌀需要控制小怪' },
+  'brackenhide': { name: '节点希纳斯', baseTime: 39, baseReq: 105, tyrannical: 1.25, fortified: 1.18, mechanics: ['dispel', 'cc'], mechanicDesc: '🧪驱散压力大 | 🌀需要控制小怪' },
+  'neltharus': { name: '迈萨拉洞窟', baseTime: 35, baseReq: 98, tyrannical: 1.18, fortified: 1.12, mechanics: ['interrupt', 'movement'], mechanicDesc: '🔇打断频繁 | 🏃走位要求高' },
+  'nokhud': { name: '风行者之塔', baseTime: 42, baseReq: 108, tyrannical: 1.28, fortified: 1.20, mechanics: ['interrupt', 'dispel', 'movement'], mechanicDesc: '🔇打断 | 🧪驱散 | 🏃走位 全能考验' },
+  'azure_vault': { name: '魔导师平台', baseTime: 38, baseReq: 104, tyrannical: 1.23, fortified: 1.17, mechanics: ['interrupt', 'movement'], mechanicDesc: '🔇打断需求高 | 🏃走位要求高' },
+  'halls_infusion': { name: '执政官之座', baseTime: 37, baseReq: 102, tyrannical: 1.22, fortified: 1.16, mechanics: ['dispel', 'movement'], mechanicDesc: '🧪驱散压力 | 🏃走位要求高' },
+  'ruby_life': { name: '通天峰', baseTime: 33, baseReq: 96, tyrannical: 1.15, fortified: 1.10, mechanics: ['dispel', 'movement'], mechanicDesc: '🧪驱散压力 | 🏃走位要求高' },
+  'uldaman': { name: '萨隆矿坑', baseTime: 44, baseReq: 110, tyrannical: 1.30, fortified: 1.22, mechanics: ['interrupt', 'cc'], mechanicDesc: '🔇打断密集 | 🌀控制链需求高' }
+};
+
+const MECHANIC_INFO = {
+  'interrupt': { name: '🔇 打断', desc: '需要频繁打断敌人施法' },
+  'dispel': { name: '🧪 驱散', desc: '需要驱散魔法debuff' },
+  'cc': { name: '🌀 控制', desc: '需要控制小怪和ADD怪' },
+  'movement': { name: '🏃 走位', desc: '需要良好走位规避伤害' }
+};
+
+// ==================== 职业数据 ====================
+const SPECIALIZATIONS = {
+  'guardian_druid': { name: '熊德', role: 'tank', basePower: 85, mechanics: ['interrupt'] },
+  'protection_warrior': { name: '防战', role: 'tank', basePower: 90, mechanics: ['interrupt', 'cc'] },
+  'blood_dk': { name: '血DK', role: 'tank', basePower: 88, mechanics: ['interrupt'] },
+  'vengeance_dh': { name: '复仇DH', role: 'tank', basePower: 82, mechanics: ['interrupt'] },
+  'protection_paladin': { name: '防骑', role: 'tank', basePower: 87, mechanics: ['interrupt', 'dispel'] },
+  'brewmaster_monk': { name: '酒仙', role: 'tank', basePower: 84, mechanics: ['movement'] },
+  'restoration_druid': { name: '奶德', role: 'healer', basePower: 85, mechanics: ['dispel', 'cc'] },
+  'holy_paladin': { name: '奶骑', role: 'healer', basePower: 88, mechanics: ['dispel'] },
+  'discipline_priest': { name: '戒律牧', role: 'healer', basePower: 86, mechanics: ['dispel'] },
+  'holy_priest': { name: '神牧', role: 'healer', basePower: 82, mechanics: ['dispel'] },
+  'restoration_shaman': { name: '奶萨', role: 'healer', basePower: 84, mechanics: ['dispel', 'interrupt'] },
+  'mistweaver_monk': { name: '织雾', role: 'healer', basePower: 83, mechanics: ['dispel', 'movement'] },
+  'preservation_evoker': { name: '湮灭德', role: 'healer', basePower: 90, mechanics: ['dispel'] },
+  'fire_mage': { name: '火法', role: 'dps', basePower: 92, mechanics: ['cc'] },
+  'frost_mage': { name: '冰法', role: 'dps', basePower: 85, mechanics: ['cc', 'movement'] },
+  'arcane_mage': { name: '奥法', role: 'dps', basePower: 88, mechanics: ['cc'] },
+  'shadow_priest': { name: '暗牧', role: 'dps', basePower: 90, mechanics: ['interrupt', 'cc'] },
+  'affliction_warlock': { name: '痛苦术', role: 'dps', basePower: 86, mechanics: ['cc'] },
+  'demonology_warlock': { name: '恶魔术', role: 'dps', basePower: 84, mechanics: ['cc'] },
+  'destruction_warlock': { name: '毁灭术', role: 'dps', basePower: 88, mechanics: ['interrupt'] },
+  'balance_druid': { name: '鸟德', role: 'dps', basePower: 87, mechanics: ['cc', 'dispel'] },
+  'feral_druid': { name: '猫德', role: 'dps', basePower: 85, mechanics: ['cc'] },
+  'retribution_paladin': { name: '惩戒骑', role: 'dps', basePower: 89, mechanics: ['interrupt', 'cc'] },
+  'arms_warrior': { name: '武器战', role: 'dps', basePower: 90, mechanics: ['interrupt', 'cc'] },
+  'fury_warrior': { name: '狂暴战', role: 'dps', basePower: 92, mechanics: ['interrupt'] },
+  'survival_hunter': { name: '生存猎', role: 'dps', basePower: 88, mechanics: ['cc', 'interrupt'] },
+  'beast_mastery_hunter': { name: '兽王猎', role: 'dps', basePower: 86, mechanics: ['movement'] },
+  'marksmanship_hunter': { name: '射击猎', role: 'dps', basePower: 87, mechanics: ['interrupt'] },
+  'assassin_rogue': { name: '刺杀贼', role: 'dps', basePower: 91, mechanics: ['cc', 'interrupt'] },
+  'outlaw_rogue': { name: '狂徒贼', role: 'dps', basePower: 89, mechanics: ['cc', 'interrupt'] },
+  'subtlety_rogue': { name: '敏锐贼', role: 'dps', basePower: 88, mechanics: ['cc', 'movement'] },
+  'windwalker_monk': { name: '踏风', role: 'dps', basePower: 86, mechanics: ['cc', 'movement'] },
+  'havoc_dh': { name: '浩劫DH', role: 'dps', basePower: 90, mechanics: ['interrupt', 'movement'] },
+  'augmentation_evoker': { name: '增辉龙', role: 'dps', basePower: 95, mechanics: ['cc'] },
+  'elemental_shaman': { name: '元素萨', role: 'dps', basePower: 87, mechanics: ['interrupt', 'cc'] },
+  'enhancement_shaman': { name: '增强萨', role: 'dps', basePower: 88, mechanics: ['interrupt', 'movement'] },
+  'frost_death_knight': { name: '冰DK', role: 'dps', basePower: 86, mechanics: ['interrupt'] },
+  'unholy_death_knight': { name: '邪DK', role: 'dps', basePower: 89, mechanics: ['cc'] },
+};
+
+// ==================== 特性标签 (含描述) ====================
+const TRAITS = {
+  // 正面特性
+  'stable_dps': { name: '稳定输出', effect: 1.10, type: 'positive', desc: '输出稳定，不会忽高忽低', mechanic: null },
+  'burst_master': { name: '爆发高手', effect: 1.15, type: 'positive', desc: '爆发期伤害爆表', mechanic: null },
+  'strong_cc': { name: '控制大师', effect: 1.08, type: 'positive', desc: '小怪控制得当，清得干净', mechanic: 'cc' },
+  'skip_expert': { name: '跳怪专家', effect: 1.05, type: 'positive', desc: '熟悉路线，跳怪如飞', mechanic: null },
+  'never_quit': { name: '永不退队', effect: 1.02, type: 'positive', desc: '无论什么情况都不会退队', mechanic: null },
+  'speed_runner': { name: '速通党', effect: 1.12, type: 'positive', desc: '时间观念极强，全程赶路', mechanic: null },
+  'dungeon_master': { name: '副本大师', effect: 1.18, type: 'positive', desc: '对每个Boss了如指掌', mechanic: null },
+  'perfect_interrupt': { name: '打断完美', effect: 1.10, type: 'positive', desc: '关键读条一个不落，全部打断', mechanic: 'interrupt' },
+  'dispel_master': { name: '驱散达人', effect: 1.10, type: 'positive', desc: '驱散及时到位，守护全队', mechanic: 'dispel' },
+  'cc_master': { name: '控制狂人', effect: 1.10, type: 'positive', desc: '小怪全程控到死', mechanic: 'cc' },
+  'movement_god': { name: '走位风骚', effect: 1.10, type: 'positive', desc: '火里跳舞，雨中漫步', mechanic: 'movement' },
+  
+  // 负面特性
+  'easy_death': { name: '容易暴毙', effect: 0.85, type: 'negative', desc: '经常莫名其妙就倒了', mechanic: null },
+  'lost': { name: '路痴', effect: 0.90, type: 'negative', desc: '在副本里经常迷路', mechanic: null },
+  'casual': { name: '休闲党', effect: 0.92, type: 'negative', desc: '不紧不慢，享受过程', mechanic: null },
+  'rage_quit': { name: '一言不合退队', effect: 0.70, type: 'negative', desc: '稍有不满就拔网线', mechanic: null },
+  'no_interrupt': { name: '从不打断', effect: 0.88, type: 'negative', desc: '打断是什么？没听说过', mechanic: null },
+  'stand_fire': { name: '站火里', effect: 0.82, type: 'negative', desc: '地上的圈是安全区，绝对不是陷阱', mechanic: null },
+  'afk_master': { name: 'AFK大师', effect: 0.75, type: 'negative', desc: '每把必定有事要离开一下', mechanic: null },
+  'chatty': { name: '话痨', effect: 0.98, type: 'negative', desc: '刷屏聊天，影响输出', mechanic: null },
+  
+  // 中性特性
+  'lucky': { name: '欧皇', effect: 1.0, type: 'neutral', desc: '随机判定时运气极好', mechanic: null },
+  'unlucky': { name: '非酋', effect: 1.0, type: 'neutral', desc: '随机判定时运气极差', mechanic: null },
+  
+  // 搞笑中性特性（无实际作用）
+  'bad_gear': { name: '装备比人差', effect: 1.0, type: 'joke', desc: '装等比队友低但自认为是大腿', mechanic: null },
+  'one_button': { name: '只会一按', effect: 1.0, type: 'joke', desc: '整场战斗只按过一个技能', mechanic: null },
+  'manual_gear': { name: '手动挡', effect: 1.0, type: 'joke', desc: '手动挡玩家，副本全程手动挡', mechanic: null },
+  'only_office': { name: '只会上班', effect: 1.0, type: 'joke', desc: '每天只打一个本就要下线了', mechanic: null },
+  'one_dungeon': { name: '每天一个本', effect: 1.0, type: 'joke', desc: '每天只打一个副本，雷打不动', mechanic: null },
+  'die_every_run': { name: '必死一次', effect: 1.0, type: 'joke', desc: '无论什么本，必定死一次', mechanic: null },
+  'practice_dummy': { name: '木桩战神', effect: 1.0, type: 'joke', desc: '木桩伤害超高，实战就拉胯', mechanic: null },
+  'forever_stuck': { name: '永远卡关', effect: 1.0, type: 'joke', desc: '每天都在打同样的层数', mechanic: null },
+  'solo_king': { name: '独狼之王', effect: 1.0, type: 'joke', desc: '从不和人组队，自认无敌', mechanic: null },
+  'watching_streamer': { name: '看直播', effect: 1.0, type: 'joke', desc: '边打本边看直播，分心操作', mechanic: null },
+  'phone_user': { name: '手机操作', effect: 1.0, type: 'joke', desc: '全程手机操作，手速感人', mechanic: null },
+  'complainer': { name: '吐槽怪', effect: 1.0, type: 'joke', desc: '全程语音吐槽队友操作', mechanic: null },
+  'snack_break': { name: '零食时间', effect: 1.0, type: 'joke', desc: '打到一半要去拿零食', mechanic: null },
+  'smoke_break': { name: '抽烟休息', effect: 1.0, type: 'joke', desc: '每个Boss战前都要出去抽一根', mechanic: null },
+  'cat_sitter': { name: '撸猫暂停', effect: 1.0, type: 'joke', desc: '家里有猫，打本必须暂停', mechanic: null },
+  'baby_cry': { name: '婴儿哭闹', effect: 1.0, type: 'joke', desc: '家里有小孩，随时可能打断', mechanic: null },
+  'internet_lag': { name: '460玩家', effect: 1.0, type: 'joke', desc: '460ping，技能延迟严重', mechanic: null },
+  'screenshot': { name: '截图狂魔', effect: 1.0, type: 'joke', desc: '每个Boss都要截图发朋友圈', mechanic: null },
+  'music_lover': { name: '音乐沉浸', effect: 1.0, type: 'joke', desc: '听歌入迷，Boss技能当BGM', mechanic: null },
+  
+  // 主角专属搞笑特性
+  'chosen_one': { name: '天选之人', effect: 1.0, type: 'joke', desc: '命中注定要拯救艾泽拉斯', mechanic: null, protagonistOnly: true },
+  'plot_armor': { name: '剧情光环', effect: 1.0, type: 'joke', desc: '主角不会死，这是定律', mechanic: null, protagonistOnly: true },
+  'last_boss': { name: '最终Boss', effect: 1.0, type: 'joke', desc: '队伍里真正的Boss是你', mechanic: null, protagonistOnly: true },
+  'hidden_power': { name: '隐藏实力', effect: 1.0, type: 'joke', desc: '一直保留实力，关键时刻才出手', mechanic: null, protagonistOnly: true },
+  'destiny': { name: '命运羁绊', effect: 1.0, type: 'joke', desc: '与队友建立了命运羁绊', mechanic: null, protagonistOnly: true },
+  'secret_backstory': { name: '神秘身世', effect: 1.0, type: 'joke', desc: '没人知道主角的过去', mechanic: null, protagonistOnly: true },
+};
+
+// 普通特性组合池（不含主角专属）
+const REGULAR_TRAIT_COMBOS = [
+  ['burst_master', 'speed_runner', 'stable_dps'],
+  ['dungeon_master', 'never_quit'],
+  ['perfect_interrupt', 'never_quit', 'stable_dps'],
+  ['dispel_master', 'never_quit'],
+  ['cc_master', 'burst_master'],
+  ['movement_god', 'speed_runner'],
+  ['dungeon_master', 'burst_master', 'stable_dps'],
+  ['burst_master', 'easy_death'],
+  ['stable_dps', 'casual'],
+  ['speed_runner', 'lost'],
+  ['skip_expert', 'movement_god', 'perfect_interrupt'],
+  ['cc_master', 'strong_cc', 'dungeon_master'],
+  ['perfect_interrupt', 'dispel_master', 'never_quit'],
+  ['movement_god', 'cc_master', 'burst_master'],
+  ['casual', 'lost', 'stand_fire'],
+  ['no_interrupt', 'stand_fire', 'easy_death'],
+  ['rage_quit', 'burst_master', 'afk_master'],
+  ['lucky', 'burst_master', 'dungeon_master'],
+  ['unlucky', 'stable_dps', 'never_quit'],
+  ['dungeon_master', 'skip_expert', 'speed_runner'],
+  ['perfect_interrupt', 'skip_expert'],
+  ['movement_god', 'lucky'],
+  ['easy_death', 'never_quit', 'stable_dps'],
+  // 搞笑特性组合
+  ['lucky', 'bad_gear', 'one_button'],
+  ['dungeon_master', 'complainer', 'screenshot'],
+  ['casual', 'one_dungeon', 'forever_stuck'],
+  ['lucky', 'solo_king', 'destiny'],
+  ['stable_dps', 'die_every_run', 'practice_dummy'],
+  ['speed_runner', 'manual_gear', 'internet_lag'],
+  ['never_quit', 'cat_sitter', 'baby_cry'],
+  ['burst_master', 'watching_streamer', 'music_lover'],
+  ['skip_expert', 'smoke_break', 'snack_break'],
+];
+
+// 主角专属特性池（可选）
+const PROTAGONIST_EXCLUSIVE_TRAITS = ['chosen_one', 'plot_armor', 'last_boss', 'hidden_power', 'destiny', 'secret_backstory'];
+const JOKE_TRAITS = Object.keys(TRAITS).filter(k => TRAITS[k].type === 'joke' && !TRAITS[k].protagonistOnly);
+
+const NAMES = ['星辰之怒', '圣光护佑', '钢铁壁垒', '暗影之舞', '雷霆万钧', '冰霜领主', '自然之力', '血色守护', '狂野之心', '神圣之光', '暗夜低语', '烈焰风暴', '虚空行者', '月光守护', '雷霆战神', '寒冰女王', '永恒猎手', '风暴使者', '龙魂骑士', '暮光刺客', '晨曦圣者', '幽暗法师', '翡翠守护', '雷霆领主', '鲜血骑士', '暗影牧师', '元素领主', '疾风步者', '夜之哨兵'];
+
+// 主角专属名字池
+const PROTAGONIST_NAMES = ['无名旅者', '冒险者', '远征者', '传说之人', '命运之子', '绝境逢生', '不屈之魂', '逆袭者', '绝地求生', '传奇诞生'];
+
+// ==================== 游戏状态 ====================
+let gold = 100;
+let availablePlayers = [];
+let party = { tank: null, healer: null, dps1: null, dps2: null, dps3: null };
+let stats = { runs: 0, successes: 0, highest: 0 };
+let draggedPlayer = null;
+let currentMechanicMatch = { matched: [], missing: [], total: 0, bonus: 1.0 };
+
+// 主角状态
+let protagonist = null;
+let protagonistAssignedSlot = null;
+let gameStarted = false;
+
+// ==================== 工具函数 ====================
+function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function randomChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function getIlvlClass(ilvl) { if (ilvl >= 290) return 'ilvl-orange'; if (ilvl >= 280) return 'ilvl-purple'; return 'ilvl-blue'; }
+
+// 生成带描述的特性标签HTML
+function traitTagHtml(traitId) {
+  const trait = TRAITS[traitId];
+  if (!trait) return '';
+  return `<span class="trait-tag ${trait.type}" data-desc="${trait.desc}">${trait.name}</span>`;
+}
+
+function getPlayerMechanicMatches(player) {
+  const specInfo = SPECIALIZATIONS[player.spec];
+  const matches = [];
+  if (specInfo && specInfo.mechanics) {
+    for (const mech of specInfo.mechanics) matches.push(mech);
+  }
+  for (const traitId of player.traits) {
+    const trait = TRAITS[traitId];
+    if (trait && trait.mechanic && !matches.includes(trait.mechanic)) {
+      matches.push(trait.mechanic);
+    }
+  }
+  return matches;
+}
+
+function calculatePower(player) {
+  if (player.isProtagonist) {
+    // 主角：固定基础90 ilvl=260时 ×1.15加成
+    let power = 90 * (player.ilvl / 260) * 1.15 * (1 + player.score / 5000);
+    for (const traitId of player.traits) {
+      const trait = TRAITS[traitId];
+      if (trait && trait.type !== 'neutral' && trait.type !== 'joke') power *= trait.effect;
+    }
+    return Math.round(power * 100) / 100;
+  }
+  const spec = SPECIALIZATIONS[player.spec];
+  let power = spec.basePower * (player.ilvl / 260) * (1 + player.score / 5000);
+  for (const traitId of player.traits) {
+    const trait = TRAITS[traitId];
+    if (trait && trait.type !== 'neutral' && trait.type !== 'joke') power *= trait.effect;
+  }
+  return Math.round(power * 100) / 100;
+}
+
+function generatePlayer() {
+  const specs = Object.keys(SPECIALIZATIONS);
+  const spec = randomChoice(specs);
+  const specInfo = SPECIALIZATIONS[spec];
+  let ilvl;
+  const roll = Math.random();
+  if (roll < 0.15) ilvl = randomInt(290, 300); // 橙色 15%
+  else if (roll < 0.35) ilvl = randomInt(280, 289); // 紫色 20%
+  else if (roll < 0.60) ilvl = randomInt(265, 279); // 蓝色 25%
+  else ilvl = randomInt(250, 264); // 绿色 40%
+  const name = randomChoice(NAMES);
+  const score = Math.round((ilvl - 250) * 30 + randomInt(500, 2000));
+  const traits = randomChoice(REGULAR_TRAIT_COMBOS);
+  return { id: Date.now() + Math.random(), name, spec, specName: specInfo.name, role: specInfo.role, ilvl, score, traits, power: 0, isProtagonist: false };
+}
+
+function generateAvailablePlayers() {
+  availablePlayers = [];
+  const usedNames = new Set();
+  for (let i = 0; i < 6; i++) {
+    let player;
+    do { player = generatePlayer(); } while (usedNames.has(player.name));
+    usedNames.add(player.name);
+    player.power = calculatePower(player);
+    player.mechanicMatches = getPlayerMechanicMatches(player);
+    availablePlayers.push(player);
+  }
+  renderAvailablePlayers();
+}
+
+function updateDungeonDesc() {
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const dungeon = DUNGEONS[dungeonKey];
+  document.getElementById('dungeonDesc').textContent = dungeon.mechanicDesc;
+  updateMechanicPanel();
+}
+
+function calculateMechanicMatch() {
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const dungeon = DUNGEONS[dungeonKey];
+  const requiredMechanics = dungeon.mechanics;
+  const allMembers = [party.tank, party.healer, party.dps1, party.dps2, party.dps3].filter(p => p);
+  const matched = [], missing = [];
+  for (const mech of requiredMechanics) {
+    let found = false;
+    for (const member of allMembers) {
+      const specInfo = SPECIALIZATIONS[member.spec];
+      if (specInfo && specInfo.mechanics && specInfo.mechanics.includes(mech)) { found = true; break; }
+      if (member.traits) {
+        for (const t of member.traits) {
+          if (TRAITS[t] && TRAITS[t].mechanic === mech) { found = true; break; }
+        }
+      }
+      if (found) break;
+    }
+    if (found) matched.push(mech); else missing.push(mech);
+  }
+  const total = requiredMechanics.length;
+  let bonus;
+  if (matched.length === 0) bonus = 0.85;
+  else if (matched.length === 1) bonus = 0.95;
+  else if (matched.length === 2) bonus = 1.05;
+  else bonus = 1.15;
+  currentMechanicMatch = { matched, missing, total, bonus };
+  return currentMechanicMatch;
+}
+
+function updateMechanicPanel() {
+  const match = calculateMechanicMatch();
+  const listEl = document.getElementById('mechanicList');
+  const summaryEl = document.getElementById('mechanicSummary');
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const dungeon = DUNGEONS[dungeonKey];
+  listEl.innerHTML = dungeon.mechanics.map(mech => {
+    const info = MECHANIC_INFO[mech];
+    const isMatched = match.matched.includes(mech);
+    return `<span class="mechanic-badge ${isMatched ? 'matched' : 'missing'}">${info ? info.name : mech} ${isMatched ? '✓ 已匹配' : '✗ 缺失'}</span>`;
+  }).join('');
+  if (match.total === 0) {
+    summaryEl.innerHTML = '⚠️ 队伍尚未组成！';
+    summaryEl.className = 'mechanic-summary';
+  } else {
+    if (match.bonus >= 1.15) summaryEl.innerHTML = `✨ 完美匹配！机制加成 <span class="mechanic-bonus">+${Math.round((match.bonus-1)*100)}%</span>`;
+    else if (match.bonus >= 1.05) summaryEl.innerHTML = `👍 匹配良好！机制加成 <span class="mechanic-bonus">+${Math.round((match.bonus-1)*100)}%</span>`;
+    else if (match.bonus >= 0.95) summaryEl.innerHTML = `😐 缺少部分机制！机制加成 <span class="mechanic-penalty">${Math.round((match.bonus-1)*100)}%</span>`;
+    else summaryEl.innerHTML = `❌ 严重缺机制！机制加成 <span class="mechanic-penalty">${Math.round((match.bonus-1)*100)}%</span>`;
+    summaryEl.className = 'mechanic-summary';
+  }
+}
+
+function renderAvailablePlayers() {
+  const container = document.getElementById('availablePlayers');
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const dungeon = DUNGEONS[dungeonKey];
+  container.innerHTML = availablePlayers.map(player => {
+    const mechTags = player.mechanicMatches.filter(m => dungeon.mechanics.includes(m));
+    const mechTagHtml = mechTags.length > 0 ? mechTags.map(m => `<span class="trait-tag mechanic-match" data-desc="${MECHANIC_INFO[m] ? MECHANIC_INFO[m].desc : ''}">${MECHANIC_INFO[m] ? MECHANIC_INFO[m].name : m}</span>`).join('') : '';
+    const traitsHtml = player.traits.map(t => traitTagHtml(t)).join('');
+    return `<div class="player-card ${player.role}" draggable="true" ondragstart="dragStart(event, ${player.id})" ondragend="dragEnd(event)">
+      <div class="name">${player.name}</div>
+      <div class="spec">${player.specName}</div>
+      <div class="stats"><span class="ilvl ${getIlvlClass(player.ilvl)}">装等: ${player.ilvl}</span><span>分数: ${player.score}</span></div>
+      <div class="traits">${traitsHtml}</div>
+      ${mechTagHtml ? `<div class="traits" style="margin-top:4px;">${mechTagHtml}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function getSuccessRate() {
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const level = parseInt(document.getElementById('levelSlider').value);
+  const dungeon = DUNGEONS[dungeonKey];
+  const slots = ['tank', 'healer', 'dps1', 'dps2', 'dps3'];
+  const filledMembers = slots.map(s => party[s]).filter(p => p);
+  if (filledMembers.length < 5) return 0;
+  const avgIlvl = filledMembers.reduce((s, p) => s + p.ilvl, 0) / 5;
+  const baseRate = 90 - 5 * level; // 2层=80%, 10层=40%, 15层=15%, 20层=-10%, 30层=-60%
+  const ilvlBonus = (avgIlvl - 270) * 1;
+  let mechMatches = 0;
+  filledMembers.forEach(p => {
+    const matched = p.mechanicMatches.filter(m => dungeon.mechanics.includes(m));
+    mechMatches += matched.length;
+  });
+  const mechBonus = mechMatches * 5;
+  return Math.min(100, Math.max(0, baseRate + ilvlBonus + mechBonus));
+}
+
+function updateSuccessRate() {
+  const bar = document.getElementById('successRateBar');
+  if (!bar) return;
+  const rate = getSuccessRate();
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const level = parseInt(document.getElementById('levelSlider').value);
+  const dungeon = DUNGEONS[dungeonKey];
+  const slots = ['tank', 'healer', 'dps1', 'dps2', 'dps3'];
+  const filledMembers = slots.map(s => party[s]).filter(p => p);
+
+  if (filledMembers.length < 5) {
+    bar.innerHTML = `<span class="sr-label">副本成功率：</span><span style="color:#888">队伍未满 (${filledMembers.length}/5)</span>`;
+    return;
+  }
+
+  const avgIlvl = filledMembers.reduce((s, p) => s + p.ilvl, 0) / 5;
+  const baseRate = 90 - 5 * level; // 2层=80%, 10层=40%, 15层=15%, 20层=-10%, 30层=-60%
+  const ilvlBonus = (avgIlvl - 270) * 1;
+  let mechMatches = 0;
+  filledMembers.forEach(p => {
+    const matched = p.mechanicMatches.filter(m => dungeon.mechanics.includes(m));
+    mechMatches += matched.length;
+  });
+  const mechBonus = mechMatches * 5;
+
+  let fillColor = rate >= 50 ? '#4caf50' : rate >= 0 ? '#ff9800' : '#f44336';
+  let rateColor = rate >= 50 ? '#6f6' : rate >= 0 ? '#fa0' : '#f66';
+  let detail = `层数: ${baseRate.toFixed(2)}% + 装等: ${ilvlBonus >= 0 ? '+' : ''}${ilvlBonus.toFixed(2)}% + 机制: +${mechBonus}%`;
+  bar.innerHTML = `
+    <span class="sr-label">副本成功率：</span>
+    <span class="sr-value" style="color:${rateColor}">${rate.toFixed(2)}%</span>
+    <span class="sr-bar-wrap"><span class="sr-bar-fill" style="width:${Math.max(0, Math.min(100, rate))}%;background:${fillColor}"></span></span>
+    <div class="sr-detail">${detail}</div>
+  `;
+}
+
+function renderParty() {
+  const slots = ['tank', 'healer', 'dps1', 'dps2', 'dps3'];
+  const roleNames = { tank: '🛡️', healer: '💚', dps1: '⚔️', dps2: '⚔️', dps3: '⚔️' };
+  const roleLabels = { tank: '坦克', healer: '治疗', dps1: 'DPS', dps2: 'DPS', dps3: 'DPS' };
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const dungeon = DUNGEONS[dungeonKey];
+  slots.forEach(slotType => {
+    const slotEl = document.querySelector(`[data-slot="${slotType}"]`);
+    const player = party[slotType];
+    if (player) {
+      const mechTags = player.mechanicMatches.filter(m => dungeon.mechanics.includes(m));
+      const mechTagHtml = mechTags.length > 0 ? mechTags.map(m => `<span class="trait-tag mechanic-match" data-desc="${MECHANIC_INFO[m] ? MECHANIC_INFO[m].desc : ''}">${MECHANIC_INFO[m] ? MECHANIC_INFO[m].name : m}</span>`).join('') : '';
+      const traitsHtml = player.traits.slice(0, 2).map(t => traitTagHtml(t)).join('');
+      const cardClass = player.isProtagonist ? `${player.role} protagonist` : player.role;
+      const badge = player.isProtagonist ? `<span class="protagonist-badge">⭐主角</span>` : '';
+      const extraClass = player.isProtagonist ? ' protagonist-in-slot' : '';
+      slotEl.className = `player-slot filled${extraClass}`;
+      slotEl.innerHTML = `${badge}
+        <div class="player-card ${cardClass}" style="cursor: pointer;" onclick="removeFromParty('${slotType}')">
+          <div class="name">${player.name}</div>
+          <div class="spec">${player.isProtagonist ? '⭐ 主角 · ' + getRoleEmoji(player.role) + ' ' + getRoleName(player.role) : player.specName}</div>
+          <div class="stats"><span class="ilvl ${getIlvlClass(player.ilvl)}">装等: ${player.ilvl}</span><span>分数: ${player.score}</span></div>
+          <div class="traits">${traitsHtml}</div>
+          ${mechTagHtml ? `<div class="traits" style="margin-top:4px;">${mechTagHtml}</div>` : ''}
+        </div>`;
+    } else {
+      slotEl.className = 'player-slot';
+      slotEl.innerHTML = `<span class="empty-slot-text">${roleNames[slotType]} ${roleLabels[slotType]}位 (拖入队友)</span>`;
+    }
+  });
+  updateMechanicPanel();
+  updateSuccessRate();
+}
+
+function updateStartButton() {
+  const btn = document.getElementById('startBtn');
+  const allFilled = party.tank && party.healer && party.dps1 && party.dps2 && party.dps3;
+  btn.disabled = !allFilled;
+}
+
+function refreshPlayers() {
+  if (gold < 5) { alert('金币不足！需要5金币刷新队员。'); return; }
+  gold -= 5;
+  updateGoldDisplay();
+  generateAvailablePlayers();
+  updateMechanicPanel();
+}
+
+function updateGoldDisplay() {
+  document.getElementById('goldAmount').textContent = gold;
+  document.getElementById('refreshBtn').disabled = gold < 5;
+}
+
+function updateStats() {
+  document.getElementById('totalRuns').textContent = stats.runs;
+  document.getElementById('successRate').textContent = stats.runs > 0 ? (stats.successes / stats.runs * 100).toFixed(2) + '%' : '0.00%';
+  document.getElementById('highestKey').textContent = '+' + stats.highest;
+}
+
+// ==================== 主角系统 ====================
+function randomizeProtagonist() {
+  // 已锁定的不能重新随机
+  if (protagonist && protagonist.locked) {
+    alert('主角已锁定，无法更改！点击"重置"后再重新生成。');
+    return;
+  }
+
+  // 名字：优先用输入框的，否则用主角名字池
+  const inputName = document.getElementById('protagonistNameInput').value.trim();
+  const name = inputName || randomChoice(PROTAGONIST_NAMES);
+
+  // 特性组合：2~3个普通特性 + 1个主角专属特性
+  const regularCombo = randomChoice(REGULAR_TRAIT_COMBOS);
+  const exclusiveTrait = randomChoice(PROTAGONIST_EXCLUSIVE_TRAITS);
+  const numRegular = Math.random() < 0.5 ? 2 : 3;
+  const traits = [...regularCombo.slice(0, numRegular), exclusiveTrait];
+
+  // 初始装等240，可以有小波动
+  const ilvl = 240 + Math.floor(Math.random() * 5);
+  const score = 2000;
+
+  protagonist = {
+    id: 'protagonist_' + Date.now(),
+    name: name,
+    spec: 'protagonist',
+    specName: '主角',
+    role: 'protagonist',
+    ilvl: ilvl,
+    score: score,
+    traits: traits,
+    power: 0,
+    isProtagonist: true,
+    locked: true, // 随机后立即锁定！
+    mechanicMatches: []
+  };
+
+  // 重新计算战力（主角特殊计算：基础更高，无职业加成）
+  const basePower = 90 * (protagonist.ilvl / 260) * 1.15;
+  let power = basePower;
+  for (const traitId of protagonist.traits) {
+    const trait = TRAITS[traitId];
+    if (trait && trait.type !== 'neutral' && trait.type !== 'joke') power *= trait.effect;
+  }
+  protagonist.power = Math.round(power * 100) / 100;
+  protagonist.mechanicMatches = getPlayerMechanicMatches(protagonist);
+
+  renderProtagonistCard();
+  document.getElementById('protagonistNameInput').value = name;
+}
+
+function resetProtagonist() {
+  if (protagonist && protagonist.locked && protagonistAssignedSlot) {
+    // 从队伍中移除
+    ['tank','healer','dps1','dps2','dps3'].forEach(s => {
+      if (party[s] && party[s].isProtagonist) {
+        party[s] = null;
+      }
+    });
+  }
+  protagonist = null;
+  protagonistAssignedSlot = null;
+  gameStarted = false;
+  renderProtagonistCard();
+  renderParty();
+  updateStartButton();
+}
+
+function renderProtagonistCard() {
+  const area = document.getElementById('protagonistCardArea');
+  const ilvlText = document.getElementById('protagonistIlvlText');
+  const ilvlFill = document.getElementById('protagonistIlvlFill');
+  const nameInput = document.getElementById('protagonistNameInput');
+  const randBtn = document.querySelector('.random-trait-btn');
+  const panel = document.getElementById('protagonistPanel');
+
+  if (!protagonist) {
+    area.innerHTML = '<div class="no-protagonist-msg">输入姓名 → 点击"随机特性" →<br>拖入左侧任意位置！</div>';
+    nameInput.value = '';
+    nameInput.disabled = false;
+    nameInput.classList.remove('locked');
+    if (randBtn) { randBtn.disabled = false; randBtn.classList.remove('locked'); randBtn.textContent = '🎲 随机特性'; }
+    if (panel) panel.classList.remove('locked');
+    ilvlText.textContent = '装等: 240';
+    ilvlFill.style.width = '0%';
+    return;
+  }
+
+  ilvlText.textContent = `装等: ${protagonist.ilvl}`;
+  const pct = Math.min(100, ((protagonist.ilvl - 240) / 110) * 100);
+  ilvlFill.style.width = pct + '%';
+
+  const traitsHtml = protagonist.traits.map(t => traitTagHtml(t)).join('');
+  const locked = protagonist.locked;
+
+  // 锁定状态：禁用输入和随机按钮
+  nameInput.disabled = locked;
+  nameInput.classList.toggle('locked', locked);
+  if (randBtn) {
+    randBtn.disabled = locked;
+    randBtn.classList.toggle('locked', locked);
+  }
+  // 面板锁定样式
+  if (panel) panel.classList.toggle('locked', locked);
+
+  // 面板标题随状态变化
+  const panelTitle = document.getElementById('protagonistTitle');
+  if (panelTitle) {
+    panelTitle.innerHTML = locked
+      ? `⭐ 主角（已锁定）⭐ <span style="font-size:0.75em;color:#aaa;">拖入左侧任意位置</span>`
+      : '⭐ 主角队员 ⭐';
+  }
+
+  // 卡片显示
+  area.innerHTML = `
+    <div class="protagonist-card ${locked ? 'locked' : ''}"
+         draggable="true"
+         ondragstart="dragStart(event, '${protagonist.id}')"
+         ondragend="dragEnd(event)">
+      <span class="protagonist-badge">⭐ 主角</span>
+      <div class="name">${protagonist.name}</div>
+      <div class="spec">${protagonist.locked && protagonistAssignedSlot ? getRoleEmoji(protagonist.role) + ' ' + getRoleName(protagonistAssignedSlot) : '职业待定（拖入队伍后确定）'}</div>
+      <div class="stats">
+        <span class="ilvl ${getIlvlClass(protagonist.ilvl)}">装等: ${protagonist.ilvl}</span>
+        <span>分数: ${protagonist.score}</span>
+        <span style="color:#ffd700">战力: ${protagonist.power}</span>
+      </div>
+      <div class="traits">${traitsHtml}</div>
+    </div>
+    ${locked ? '<button class="protagonist-reset-btn" onclick="resetProtagonist()">🔄 重置主角（重新生成）</button>' : ''}`;
+}
+
+function getRoleName(slotType) {
+  const names = { tank: '坦克', healer: '治疗', dps: '输出', dps1: 'DPS', dps2: 'DPS', dps3: 'DPS' };
+  return names[slotType] || slotType;
+}
+
+function getRoleEmoji(role) {
+  const emojis = { tank: '🛡️', healer: '💚', dps: '⚔️', dps1: '⚔️', dps2: '⚔️', dps3: '⚔️' };
+  return emojis[role] || '⭐';
+}
+
+function removeFromParty(slotType) {
+  if (!party[slotType]) return;
+  const player = party[slotType];
+  if (!player.isProtagonist) {
+    availablePlayers.push(player);
+  } else {
+    // 主角离开队伍：保持锁定状态，回到面板
+    protagonistAssignedSlot = null;
+    protagonist.role = 'protagonist';
+    renderProtagonistCard();
+  }
+  party[slotType] = null;
+  renderAvailablePlayers();
+  renderParty();
+  updateStartButton();
+}
+
+// ==================== 拖拽逻辑 ====================
+function dragStart(event, playerId) {
+  // 优先检查是否是主角
+  if (protagonist && protagonist.id === playerId) {
+    draggedPlayer = protagonist;
+  } else {
+    draggedPlayer = availablePlayers.find(p => p.id === playerId);
+  }
+  event.target.classList.add('dragging');
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+function dragEnd(event) { event.target.classList.remove('dragging'); }
+function allowDrop(event) { event.preventDefault(); event.currentTarget.classList.add('dragover'); }
+function leaveDrop(event) { event.currentTarget.classList.remove('dragover'); }
+
+function drop(event) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('dragover');
+  if (!draggedPlayer) return;
+  const slotType = event.currentTarget.dataset.slot;
+
+  // 普通队员角色限制
+  if (!draggedPlayer.isProtagonist) {
+    if (slotType === 'tank' && draggedPlayer.role !== 'tank') { alert('坦克位只能放坦克！'); return; }
+    if (slotType === 'healer' && draggedPlayer.role !== 'healer') { alert('治疗位只能放治疗！'); return; }
+    if (slotType.startsWith('dps') && draggedPlayer.role !== 'dps') { alert('DPS位只能放输出！'); return; }
+  }
+
+  // 如果目标槽位已有队员（且不是主角），放回可选列表
+  if (party[slotType]) {
+    if (!party[slotType].isProtagonist) availablePlayers.push(party[slotType]);
+    // 如果是主角已在另一个槽位，先清那个槽位
+    if (party[slotType].isProtagonist) {
+      ['tank','healer','dps1','dps2','dps3'].forEach(s => {
+        if (party[s] && party[s].isProtagonist && s !== slotType) party[s] = null;
+      });
+    }
+  }
+
+  party[slotType] = draggedPlayer;
+
+  if (!draggedPlayer.isProtagonist) {
+    availablePlayers = availablePlayers.filter(p => p.id !== draggedPlayer.id);
+  } else {
+    // 主角占据该槽位，确定角色
+    if (slotType === 'tank') draggedPlayer.role = 'tank';
+    else if (slotType === 'healer') draggedPlayer.role = 'healer';
+    else draggedPlayer.role = 'dps';
+    protagonistAssignedSlot = slotType;
+    // 更新主角在面板的显示
+    renderProtagonistCard();
+  }
+
+  renderAvailablePlayers();
+  renderParty();
+  updateStartButton();
+}
+
+function removeFromParty(slotType) {
+  if (!party[slotType]) return;
+  const player = party[slotType];
+  if (!player.isProtagonist) {
+    availablePlayers.push(player);
+  } else {
+    protagonistAssignedSlot = null;
+  }
+  party[slotType] = null;
+  renderAvailablePlayers();
+  renderParty();
+  updateStartButton();
+}
+
+// ==================== 开始游戏流程 ====================
+function startDungeon() {
+  // 检查队伍完整性
+  const missingSlots = [];
+  ['tank', 'healer', 'dps1', 'dps2', 'dps3'].forEach(s => {
+    if (!party[s]) missingSlots.push(s);
+  });
+  if (missingSlots.length > 0) {
+    alert('队伍尚未组成！请将队员（包括主角）拖入对应位置。');
+    return;
+  }
+  if (!protagonist || !protagonist.locked) {
+    alert('请先生成主角（输入姓名 → 点击"随机特性"）！');
+    return;
+  }
+  // 检查主角是否在队伍中
+  const protagonistInParty = ['tank','healer','dps1','dps2','dps3'].some(s => party[s] && party[s].isProtagonist);
+  if (!protagonistInParty) {
+    alert('主角尚未加入队伍！请将主角拖入左侧任意位置。');
+    return;
+  }
+  gameStarted = true;
+  doRunDungeon();
+}
+
+// ==================== 副本挑战 ====================
+async function doRunDungeon() {
+  const dungeonKey = document.getElementById('dungeonSelect').value;
+  const level = parseInt(document.getElementById('levelSlider').value);
+  const dungeon = DUNGEONS[dungeonKey];
+  
+  const overlay = document.getElementById('battleOverlay');
+  const title = document.getElementById('battleTitle');
+  const text = document.getElementById('battleText');
+  const mechEl = document.getElementById('battleMechanics');
+  const powerEl = document.getElementById('battlePower');
+  
+  overlay.classList.add('active');
+  document.getElementById('settlement').classList.remove('active');
+  title.textContent = `🏰 ${dungeon.name} +${level}`;
+  mechEl.innerHTML = dungeon.mechanics.map(m => {
+    const info = MECHANIC_INFO[m];
+    return `<span class="battle-mech">${info ? info.name : m}</span>`;
+  }).join('');
+  
+  const messages = ['正在进入副本...', '正在清除小怪...', '正在挑战首领...', '正在清理剩余怪物...'];
+  const successRate = getSuccessRate() / 100;
+  const allMembers = [party.tank, party.healer, party.dps1, party.dps2, party.dps3];
+  const totalPower = allMembers.reduce((sum, p) => sum + p.power, 0);
+  
+  for (let i = 0; i < messages.length; i++) {
+    text.textContent = messages[i];
+    powerEl.textContent = `队伍战力: ${Math.round(totalPower)}`;
+    await sleep(1200 + Math.random() * 600);
+  }
+  
+  const result = calculateBattle(dungeon, level, successRate, totalPower);
+  
+  const match = calculateMechanicMatch();
+  mechEl.innerHTML = dungeon.mechanics.map(m => {
+    const info = MECHANIC_INFO[m];
+    const ok = match.matched.includes(m);
+    return `<span class="battle-mech ${ok ? 'success' : ''}">${info ? info.name : m} ${ok ? '✓' : '✗'}</span>`;
+  }).join('');
+  
+  await sleep(500);
+  overlay.classList.remove('active');
+  showSettlement(result, dungeon, level);
+}
+
+function calculateBattle(dungeon, level, successRate, totalPower) {
+  const allMembers = [party.tank, party.healer, party.dps1, party.dps2, party.dps3];
+  const activeTraits = [];
+  const luckyCount = allMembers.filter(m => m.traits.includes('lucky')).length;
+  const unluckyCount = allMembers.filter(m => m.traits.includes('unlucky')).length;
+  
+  for (const member of allMembers) {
+    for (const traitId of member.traits) {
+      const trait = TRAITS[traitId];
+      if (trait) {
+        activeTraits.push({ name: trait.name, effect: trait.effect, type: trait.type });
+      }
+    }
+  }
+  
+  // 用成功率决定是否成功
+  const roll = Math.random();
+  const success = roll < successRate;
+  
+  // 成功后用 power 比例影响是否限时
+  let timedRate = 0.5;
+  if (activeTraits.some(t => t.name === '速通党')) timedRate += 0.3;
+  if (activeTraits.some(t => t.name === '休闲党')) timedRate -= 0.2;
+  if (activeTraits.some(t => t.name === '路痴')) timedRate -= 0.1;
+  timedRate = Math.min(0.95, Math.max(0.1, timedRate));
+  const timed = success && Math.random() < timedRate;
+  
+  // 失败时检测退队
+  const hasQuitTrait = activeTraits.some(t => t.name === '一言不合退队');
+  const quit = !success && hasQuitTrait && Math.random() < 0.6;
+  
+  let goldChange = 0;
+  let protagonistUpgrade = null;
+  let scoreChange = 0;
+  
+  if (success) {
+    goldChange = Math.round(level * 10 * (timed ? 1 : 0.6));
+    gold += goldChange;
+    stats.successes++;
+    if (level > stats.highest) stats.highest = level;
+    
+    // 分数：限时全额获得，非限时少量
+    scoreChange = timed ? level * 10 : Math.round(level * 10 * 0.4);
+    
+    // 主角装等提升
+    if (protagonist) {
+      const upgradeRoll = Math.random();
+      if (upgradeRoll < 0.80) {
+        protagonistUpgrade = { amount: 0.1, type: 'sm' };
+        protagonist.ilvl = Math.round((protagonist.ilvl + 0.1) * 10) / 10;
+      } else if (upgradeRoll < 0.90) {
+        protagonistUpgrade = { amount: 0, type: 'none' };
+      } else {
+        protagonistUpgrade = { amount: 1, type: 'big' };
+        protagonist.ilvl = Math.round((protagonist.ilvl + 1) * 10) / 10;
+      }
+      protagonist.score = (protagonist.score || 0) + scoreChange;
+      // 重新计算主角战力
+      const basePower = 90 * (protagonist.ilvl / 260) * 1.15 * (1 + protagonist.score / 5000);
+      let power = basePower;
+      for (const traitId of protagonist.traits) {
+        const trait = TRAITS[traitId];
+        if (trait && trait.type !== 'neutral' && trait.type !== 'joke') power *= trait.effect;
+      }
+      protagonist.power = Math.round(power * 100) / 100;
+    }
+  } else if (!quit) {
+    goldChange = -Math.round(level * 3);
+    gold += goldChange;
+  }
+  stats.runs++;
+  
+  return {
+    success, timed, quit, scoreChange, 
+    goldChange, level, protagonistUpgrade
+  };
+}
+
+function showSettlement(result, dungeon, level) {
+  const settlement = document.getElementById('settlement');
+  const icon = document.getElementById('settlementIcon');
+  const title = document.getElementById('settlementTitle');
+  const details = document.getElementById('settlementDetails');
+  const goldEl = document.getElementById('goldChange');
+  const upgradeEl = document.getElementById('protagonistUpgrade');
+  
+  // 主角装等提升显示
+  if (result.protagonistUpgrade) {
+    upgradeEl.style.display = 'block';
+    if (result.protagonistUpgrade.type === 'sm') {
+      upgradeEl.innerHTML = `⭐ 主角装等提升 <span class="ilvl-change">+${result.protagonistUpgrade.amount}</span> → ${protagonist.ilvl}`;
+    } else if (result.protagonistUpgrade.type === 'big') {
+      upgradeEl.innerHTML = `🌟 主角装等大幅提升 <span class="ilvl-change">+${result.protagonistUpgrade.amount}!</span> → ${protagonist.ilvl} (欧皇降临！)`;
+    } else {
+      upgradeEl.innerHTML = `😢 主角本次未获得装等提升 (${protagonist.ilvl})`;
+    }
+  } else {
+    upgradeEl.style.display = 'none';
+  }
+  
+  const scoreStr = result.scoreChange > 0 ? `<br>分数 +${result.scoreChange} (总分: ${protagonist ? protagonist.score : 0})` : '';
+  
+  if (result.quit) {
+    icon.textContent = '💀';
+    title.textContent = '队友退队了！';
+    title.className = 'settlement-title quit';
+    details.innerHTML = `队伍在 <strong>${dungeon.name}</strong> +${level} 挑战失败<br>一言不合退队的队友跑了...`;
+    goldEl.textContent = `${result.goldChange} 💰`;
+    goldEl.className = 'gold-change negative';
+  } else if (result.success && result.timed) {
+    icon.textContent = '🏆';
+    title.textContent = '限时完成！';
+    title.className = 'settlement-title success';
+    details.innerHTML = `<strong>${dungeon.name}</strong> +${level} 限时完成！${scoreStr}`;
+    goldEl.textContent = `+${result.goldChange} 💰`;
+    goldEl.className = 'gold-change positive';
+  } else if (result.success) {
+    icon.textContent = '✅';
+    title.textContent = '挑战成功！';
+    title.className = 'settlement-title success';
+    details.innerHTML = `<strong>${dungeon.name}</strong> +${level} 超时完成...${scoreStr}`;
+    goldEl.textContent = `+${result.goldChange} 💰`;
+    goldEl.className = 'gold-change positive';
+  } else {
+    icon.textContent = '❌';
+    title.textContent = '挑战失败...';
+    title.className = 'settlement-title fail';
+    details.innerHTML = `队伍在 <strong>${dungeon.name}</strong> +${level} 灭团了...`;
+    goldEl.textContent = `${result.goldChange} 💰`;
+    goldEl.className = 'gold-change negative';
+  }
+  
+  settlement.classList.add('active');
+  updateGoldDisplay();
+  updateStats();
+  
+  // 更新主角卡片
+  if (protagonist) renderProtagonistCard();
+}
+
+function closeSettlement() {
+  document.getElementById('settlement').classList.remove('active');
+  ['tank', 'healer', 'dps1', 'dps2', 'dps3'].forEach(slot => { party[slot] = null; });
+  generateAvailablePlayers();
+  renderParty();
+  updateStartButton();
+  updateSuccessRate();
+}
+
+// ==================== 初始化 ====================
+document.getElementById('levelSlider').addEventListener('input', (e) => {
+  document.getElementById('levelDisplay').textContent = e.target.value;
+  updateSuccessRate();
+});
+document.getElementById('dungeonSelect').addEventListener('change', () => {
+  updateDungeonDesc();
+  generateAvailablePlayers();
+  renderParty();
+});
+
+
+// 主角名字输入同步
+document.getElementById('protagonistNameInput').addEventListener('input', (e) => {
+  if (protagonist) protagonist.name = e.target.value;
+});
+
+generateAvailablePlayers();
+renderParty();
+updateDungeonDesc();
+updateGoldDisplay();
+updateStats();
+</script>
+</body>
+</html>
