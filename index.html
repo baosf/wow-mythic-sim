@@ -289,7 +289,7 @@
     .battle-power { color: #aaa; font-size: 0.9em; margin-top: 8px; }
 
     /* 结算面板 */
-    .settlement { display: none; text-align: center; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 2px solid rgba(255,215,0,0.3); max-width: 520px; }
+    .settlement { display: none; text-align: center; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 2px solid rgba(255,215,0,0.3); width: 100%; }
     .settlement.active { display: block; animation: slideUp 0.5s; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
     .settlement-icon { font-size: 5em; margin-bottom: 15px; }
@@ -307,14 +307,42 @@
     .gold-change { font-size: 1.6em; margin: 10px 0; }
     .gold-change.positive { color: #2ecc71; }
     .gold-change.negative { color: #e74c3c; }
+    .battle-dialogue { margin-top: 14px; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+    .battle-dialogue-line { font-size: 0.88em; color: #bbb; margin: 4px 0; padding: 4px 8px; background: rgba(255,255,255,0.04); border-radius: 6px; font-style: italic; line-height: 1.5; }
     .settlement-btn { padding: 12px 30px; background: linear-gradient(135deg, #ffd700, #ff8c00); border: none; border-radius: 8px; color: #1a1a2e; cursor: pointer; font-weight: bold; font-size: 1.1em; transition: all 0.3s; }
     .settlement-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,215,0,0.5); }
 
-    /* 统计栏 */
-    .stats-bar { display: flex; justify-content: center; gap: 40px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; }
-    .stat-item { text-align: center; }
-    .stat-value { font-size: 1.8em; font-weight: bold; color: #ffd700; }
-    .stat-label { font-size: 0.85em; color: #888; margin-top: 5px; }
+    /* 副本进度追踪 */
+    .dungeon-progress-section { margin-top: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 16px 20px; border: 1px solid rgba(255,255,255,0.08); }
+    .dp-title { text-align: center; font-size: 1.1em; color: #e0c97f; margin-bottom: 4px; font-weight: bold; }
+    .dp-hint { text-align: center; font-size: 0.8em; color: #666; margin-bottom: 12px; }
+    .dungeon-progress-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .dp-card { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; }
+    .dp-card.completed { border-color: #ffd700; background: rgba(255,215,0,0.1); }
+    .dp-card.not-started { opacity: 0.6; }
+    .dp-name { font-size: 0.82em; color: #ccc; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dp-level { font-size: 1.1em; font-weight: bold; color: #fff; }
+    .dp-level.no-progress { color: #555; }
+    .dp-level.good { color: #2ecc71; }
+    .dp-level.great { color: #ffd700; }
+    .dp-star { font-size: 1.2em; margin-top: 2px; }
+    .dp-star.earned { color: #ffd700; }
+    .dp-star.not-earned { color: #333; }
+
+    /* 恭喜通关弹窗 */
+    .final-victory-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; justify-content: center; align-items: center; z-index: 2000; }
+    .final-victory-overlay.active { display: flex; animation: fadeIn2 0.5s; }
+    .final-victory-box { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); border: 2px solid #ffd700; border-radius: 20px; padding: 36px 40px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 0 60px rgba(255,215,0,0.3); animation: slideUp 0.5s; }
+    .fv-fireworks { font-size: 2.5em; margin-bottom: 12px; letter-spacing: 6px; }
+    .fv-title { font-size: 2em; color: #ffd700; font-weight: bold; margin-bottom: 8px; }
+    .fv-subtitle { color: #aaa; font-size: 1em; margin-bottom: 16px; }
+    .fv-divider { color: #555; margin: 14px 0; letter-spacing: 2px; }
+    .fv-stats { color: #ddd; font-size: 0.95em; line-height: 2; text-align: left; padding: 0 16px; }
+    .fv-stats div { display: flex; justify-content: space-between; }
+    .fv-stats span { color: #e0c97f; }
+    .fv-message { color: #aaa; font-size: 0.9em; margin: 16px 0; font-style: italic; }
+    .fv-btn { padding: 10px 32px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; margin-top: 8px; }
+    .fv-btn:hover { opacity: 0.9; }
 
     .dungeon-desc { text-align: center; color: #888; font-size: 0.85em; margin-top: 5px; }
 
@@ -405,21 +433,48 @@
             <div class="no-protagonist-msg">输入姓名 → 点击"随机特性" →<br>拖入左侧任意位置！</div>
           </div>
         </div>
+
+        <!-- 结算面板 -->
+        <div class="settlement" id="settlement">
+          <div class="settlement-icon" id="settlementIcon">🏆</div>
+          <div class="settlement-title" id="settlementTitle">挑战成功！</div>
+          <div class="settlement-mechs" id="settlementMechs"></div>
+          <div class="protagonist-upgrade" id="protagonistUpgrade" style="display:none;"></div>
+          <div class="settlement-details" id="settlementDetails"></div>
+          <div class="gold-change" id="goldChange">+100 💰</div>
+          <div class="battle-dialogue" id="battleDialogue"></div>
+          <button class="settlement-btn" onclick="closeSettlement()">继续挑战</button>
+        </div>
       </div>
-      
+
       <div class="party-box">
         <div class="party-title">📋 可选队员</div>
         <div id="availablePlayers"></div>
       </div>
     </div>
-    
-    <div class="stats-bar">
-      <div class="stat-item"><div class="stat-value" id="totalRuns">0</div><div class="stat-label">总挑战</div></div>
-      <div class="stat-item"><div class="stat-value" id="successRate">0%</div><div class="stat-label">成功率</div></div>
-      <div class="stat-item"><div class="stat-value" id="highestKey">+0</div><div class="stat-label">最高层数</div></div>
+
+    <!-- 副本进度追踪 -->
+  
+  <!-- 副本进度追踪 -->
+  <div class="dungeon-progress-section" id="dungeonProgressSection">
+    <div class="dp-title">🏆 副本进度</div>
+    <div class="dp-hint">限时通关 ≥16层 视为完成 ✓</div>
+    <div class="dungeon-progress-grid" id="dungeonProgressGrid"></div>
+  </div>
+
+  <!-- 恭喜通关弹窗 -->
+  <div class="final-victory-overlay" id="finalVictoryOverlay">
+    <div class="final-victory-box">
+      <div class="fv-fireworks">🎆🎇🎊🎉🎆🎇</div>
+      <div class="fv-title">🎉 恭喜通关！🎉</div>
+      <div class="fv-subtitle">所有副本限时16+通关！</div>
+      <div class="fv-divider">═══════════════════</div>
+      <div class="fv-stats" id="finalVictoryStats"></div>
+      <div class="fv-divider">═══════════════════</div>
+      <div class="fv-message">你是真正的史诗钥石大师！</div>
+      <button class="fv-btn" onclick="document.getElementById('finalVictoryOverlay').classList.remove('active')">继续挑战</button>
     </div>
   </div>
-  
 
   <!-- 战斗动画 -->
   <div class="battle-overlay" id="battleOverlay">
@@ -435,18 +490,7 @@
     <div class="battle-power" id="battlePower"></div>
   </div>
   
-  <!-- 结算面板 -->
-  <div class="settlement" id="settlement">
-    <div class="settlement-icon" id="settlementIcon">🏆</div>
-    <div class="settlement-title" id="settlementTitle">挑战成功！</div>
-    <div class="settlement-mechs" id="settlementMechs"></div>
-    <div class="protagonist-upgrade" id="protagonistUpgrade" style="display:none;"></div>
-    <div class="settlement-details" id="settlementDetails"></div>
-    <div class="gold-change" id="goldChange">+100 💰</div>
-    <button class="settlement-btn" onclick="closeSettlement()">继续挑战</button>
-  </div>
-
-<script>
+  <script>
 // ==================== 副本数据 - 10.0 巨龙时代 第一赛季 ====================
 const DUNGEONS = {
   'algethar': { name: '艾杰斯亚学院', baseTime: 36, baseReq: 100, tyrannical: 1.20, fortified: 1.15, mechanics: ['interrupt', 'cc'], mechanicDesc: '🔇打断需求高 | 🌀需要控制小怪' },
@@ -618,6 +662,11 @@ let gold = 100;
 let availablePlayers = [];
 let party = { tank: null, healer: null, dps1: null, dps2: null, dps3: null };
 let stats = { runs: 0, successes: 0, highest: 0 };
+
+// 副本进度追踪
+const dungeonProgress = {};
+Object.keys(DUNGEONS).forEach(key => { dungeonProgress[key] = 0; });
+
 let draggedPlayer = null;
 let currentMechanicMatch = { matched: [], missing: [], total: 0, bonus: 1.0 };
 
@@ -771,7 +820,7 @@ function renderAvailablePlayers() {
     const mechTags = player.mechanicMatches.filter(m => dungeon.mechanics.includes(m));
     const mechTagHtml = mechTags.length > 0 ? mechTags.map(m => `<span class="trait-tag mechanic-match" data-desc="${MECHANIC_INFO[m] ? MECHANIC_INFO[m].desc : ''}">${MECHANIC_INFO[m] ? MECHANIC_INFO[m].name : m}</span>`).join('') : '';
     const traitsHtml = player.traits.map(t => traitTagHtml(t)).join('');
-    return `<div class="player-card ${player.role}" draggable="true" ondragstart="dragStart(event, ${player.id})" ondragend="dragEnd(event)">
+    return `<div class="player-card ${player.role}" draggable="true" onclick="handleAvailablePlayerClick(${player.id})" ondragstart="dragStart(event, ${player.id})" ondragend="dragEnd(event)">
       <div class="name">${player.name}</div>
       <div class="spec">${player.specName}</div>
       <div class="stats"><span class="ilvl ${getIlvlClass(player.ilvl)}">装等: ${player.ilvl}</span><span>分数: ${player.score}</span></div>
@@ -779,6 +828,92 @@ function renderAvailablePlayers() {
       ${mechTagHtml ? `<div class="traits" style="margin-top:4px;">${mechTagHtml}</div>` : ''}
     </div>`;
   }).join('');
+}
+
+function handleAvailablePlayerClick(playerId) {
+  const player = availablePlayers.find(p => p.id === playerId);
+  if (!player) return;
+
+  // 角色对应的槽位
+  const roleSlots = {
+    tank: ['tank'],
+    healer: ['healer'],
+    dps: ['dps1', 'dps2', 'dps3']
+  };
+  const slots = roleSlots[player.role] || [];
+
+  // 找第一个空槽位（排除主角已占的）
+  for (const slot of slots) {
+    if (!party[slot] || (party[slot] && party[slot].isProtagonist)) {
+      // 如果主角占了这个槽，先清空主角
+      if (party[slot] && party[slot].isProtagonist) {
+        protagonistAssignedSlot = null;
+        renderProtagonistCard();
+      }
+      party[slot] = player;
+      availablePlayers = availablePlayers.filter(p => p.id !== player.id);
+      renderAvailablePlayers();
+      renderParty();
+      updateStartButton();
+      hideReplaceModal();
+      return;
+    }
+  }
+
+  // 所有该角色槽位都满了，显示替换选择框
+  showReplaceModal(player, slots);
+}
+
+function showReplaceModal(player, slots) {
+  // 移除旧的
+  let overlay = document.getElementById('replaceModalOverlay');
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement('div');
+  overlay.id = 'replaceModalOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  const roleName = { tank: '坦克', healer: '治疗', dps: '输出' }[player.role];
+  const slotBtns = slots.map(slot => {
+    const occupant = party[slot];
+    const occupantName = occupant.isProtagonist ? `⚠️ ${protagonist.name}（主角）` : occupant.name;
+    return `<button onclick="replaceWithModal(${player.id}, '${slot}')" style="width:100%;padding:10px 16px;margin:6px 0;background:#1a1a2e;border:1px solid #444;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;">替换 ${occupantName}</button>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <div style="background:#1e1e2e;border-radius:12px;padding:24px;min-width:280px;max-width:340px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+      <div style="color:#e0c97f;font-size:16px;font-weight:bold;margin-bottom:12px;">${player.name} 替换谁？</div>
+      <div style="margin-bottom:16px;">${slotBtns}</div>
+      <button onclick="hideReplaceModal()" style="width:100%;padding:8px;background:#333;border:1px solid #555;color:#aaa;border-radius:6px;cursor:pointer;">取消</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function replaceWithModal(playerId, slot) {
+  const player = availablePlayers.find(p => p.id === playerId);
+  if (!player) return;
+
+  // 把当前槽位的人放回可选列表（主角则不清除主角标记）
+  if (party[slot]) {
+    if (!party[slot].isProtagonist) {
+      availablePlayers.push(party[slot]);
+    } else {
+      protagonistAssignedSlot = null;
+      renderProtagonistCard();
+    }
+  }
+
+  party[slot] = player;
+  availablePlayers = availablePlayers.filter(p => p.id !== player.id);
+  renderAvailablePlayers();
+  renderParty();
+  updateStartButton();
+  hideReplaceModal();
+}
+
+function hideReplaceModal() {
+  const overlay = document.getElementById('replaceModalOverlay');
+  if (overlay) overlay.remove();
 }
 
 function getSuccessRate() {
@@ -889,10 +1024,110 @@ function updateGoldDisplay() {
   document.getElementById('refreshBtn').disabled = gold < 5;
 }
 
-function updateStats() {
-  document.getElementById('totalRuns').textContent = stats.runs;
-  document.getElementById('successRate').textContent = stats.runs > 0 ? (stats.successes / stats.runs * 100).toFixed(2) + '%' : '0.00%';
-  document.getElementById('highestKey').textContent = '+' + stats.highest;
+// ==================== 副本进度追踪 ====================
+function updateDungeonProgress() {
+  const grid = document.getElementById('dungeonProgressGrid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(DUNGEONS).map(([key, dungeon]) => {
+    const level = dungeonProgress[key] || 0;
+    const completed = level >= 16;
+    const cls = completed ? 'completed' : level > 0 ? '' : 'not-started';
+    let lvlCls = 'no-progress';
+    if (level >= 20) lvlCls = 'great';
+    else if (level >= 16) lvlCls = 'good';
+    else if (level > 0) lvlCls = '';
+    return `<div class="dp-card ${cls}">
+      <div class="dp-name">${dungeon.name}</div>
+      <div class="dp-level ${lvlCls}">${level > 0 ? '+' + level : '—'}</div>
+      <div class="dp-star ${completed ? 'earned' : 'not-earned'}">★</div>
+    </div>`;
+  }).join('');
+}
+
+function checkAllComplete() {
+  const keys = Object.keys(DUNGEONS);
+  const allDone = keys.every(k => dungeonProgress[k] >= 16);
+  if (!allDone) return;
+  const overlay = document.getElementById('finalVictoryOverlay');
+  if (!overlay || overlay.classList.contains('shown')) return;
+  overlay.classList.add('active', 'shown');
+  const statsDiv = document.getElementById('finalVictoryStats');
+  statsDiv.innerHTML = `
+    <div><span>🏰 总挑战次数</span><span>${stats.runs}</span></div>
+    <div><span>✅ 成功次数</span><span>${stats.successes}</span></div>
+    <div><span>📈 成功率</span><span>${stats.runs > 0 ? (stats.successes / stats.runs * 100).toFixed(1) + '%' : '0%'}</span></div>
+    <div><span>⚔️ 最高层数</span><span>+${stats.highest}</span></div>
+    <div><span>💰 当前金币</span><span>${gold}</span></div>
+    <div><span>⭐ 主角分数</span><span>${protagonist ? protagonist.score : 0}</span></div>
+    <div><span>🛡️ 主角装等</span><span>${protagonist ? protagonist.ilvl : '—'}</span></div>
+  `;
+}
+
+// ==================== 战斗对话系统 ====================
+function generateBattleDialogue(result, dungeon, level) {
+  const allMembers = [party.tank, party.healer, party.dps1, party.dps2, party.dps3].filter(Boolean);
+  const randomMember = () => allMembers[Math.floor(Math.random() * allMembers.length)];
+  const member = randomMember();
+  const memberName = member.isProtagonist ? (protagonist ? protagonist.name : '主角') : (member.name || member.specName);
+
+  // 按结果类型选对话
+  if (result.quit) {
+    return [
+      `${memberName}："我不打了，告辞！"`,
+      `${memberName}："这队伍有毛病吧，再见！"`,
+      `其他队员："他跑了...我们减员了..."`
+    ];
+  }
+
+  if (result.success && result.timed) {
+    const msgs = [
+      `${memberName}："限时过了！爽！"`,
+      `${memberName}："这波配合可以啊！"`,
+      `${memberName}："秒了秒了！下一个！"`,
+      `${memberName}："还行还行，赶在倒计时前清了！"`
+    ];
+    // 特殊吐槽
+    if (dungeon.mechanics.includes('movement')) {
+      msgs.push(`${memberName}："走位走位，差点没转过来..."`);
+    }
+    if (dungeon.mechanics.includes('interrupt')) {
+      msgs.push(`${memberName}："打断打得手都酸了！"`);
+    }
+    if (dungeon.mechanics.includes('dispel')) {
+      msgs.push(`${memberName}："驱散驱散，终于干净了！"`);
+    }
+    return msgs.slice(0, 2);
+  }
+
+  if (result.success) {
+    const msgs = [
+      `${memberName}："超时了...还好过了。"`,
+      `${memberName}："勉强打完，差点没清完！"`,
+      `${memberName}："这波打得有点拖沓..."`,
+      `${memberName}："下次能快点吗？时间紧啊..."`
+    ];
+    if (dungeon.mechanics.includes('movement')) {
+      msgs.push(`${memberName}："那个boss转火追着人跑，我绕场三圈..."`);
+    }
+    return msgs.slice(0, 2);
+  }
+
+  // 失败
+  const msgs = [
+    `${memberName}："啊这...灭团了..."`,
+    `${memberName}："坦克怎么一直从后方出现（指ADD）..."`,
+    `${memberName}："这层压力太大了，清不过来..."`,
+    `${memberName}："下次再来吧，先跑尸..."`,
+    `${memberName}："治疗蓝空了！撑不住了！"`,
+    `${memberName}："DPS不够！打得太慢了！"`
+  ];
+  if (dungeon.mechanics.includes('cc')) {
+    msgs.push(`${memberName}："小怪没控住，一波崩了..."`);
+  }
+  if (dungeon.mechanics.includes('movement')) {
+    msgs.push(`${memberName}："走位躲技能躲得头晕眼花..."`);
+  }
+  return msgs.slice(0, 2);
 }
 
 // ==================== 主角系统 ====================
@@ -914,7 +1149,9 @@ function randomizeProtagonist() {
   const traits = [...regularCombo.slice(0, numRegular), exclusiveTrait];
 
   // 初始装等240，可以有小波动
-  const ilvl = 240 + Math.floor(Math.random() * 5);
+  let ilvl = 240 + Math.floor(Math.random() * 5);
+  // 彩蛋：参观动物园 → 装等290
+  if (name === '参观动物园') ilvl = 290;
   const score = 2000;
 
   protagonist = {
@@ -1180,10 +1417,10 @@ async function doRunDungeon() {
   for (let i = 0; i < messages.length; i++) {
     text.textContent = messages[i];
     powerEl.textContent = `队伍战力: ${Math.round(totalPower)}`;
-    await sleep(1200 + Math.random() * 600);
+    await sleep(450);
   }
   
-  const result = calculateBattle(dungeon, level, successRate, totalPower);
+  const result = calculateBattle(dungeon, dungeonKey, level, successRate, totalPower);
   
   const match = calculateMechanicMatch();
   mechEl.innerHTML = dungeon.mechanics.map(m => {
@@ -1197,7 +1434,7 @@ async function doRunDungeon() {
   showSettlement(result, dungeon, level);
 }
 
-function calculateBattle(dungeon, level, successRate, totalPower) {
+function calculateBattle(dungeon, dungeonKey, level, successRate, totalPower) {
   const allMembers = [party.tank, party.healer, party.dps1, party.dps2, party.dps3];
   const activeTraits = [];
   const luckyCount = allMembers.filter(m => m.traits.includes('lucky')).length;
@@ -1237,6 +1474,8 @@ function calculateBattle(dungeon, level, successRate, totalPower) {
     gold += goldChange;
     stats.successes++;
     if (level > stats.highest) stats.highest = level;
+    // 任意成功（限时或超时）都计入副本进度
+    dungeonProgress[dungeonKey] = Math.max(dungeonProgress[dungeonKey] || 0, level);
     
     // 分数：限时全额获得，非限时少量
     scoreChange = timed ? level * 10 : Math.round(level * 10 * 0.4);
@@ -1329,10 +1568,16 @@ function showSettlement(result, dungeon, level) {
     goldEl.className = 'gold-change negative';
   }
   
+  // 生成战斗对话
+  const dialogue = generateBattleDialogue(result, dungeon, level);
+  const dialogueHtml = dialogue.map(d => `<div class="battle-dialogue-line">${d}</div>`).join('');
+  details.innerHTML += `<div class="battle-dialogue">${dialogueHtml}</div>`;
+
   settlement.classList.add('active');
   updateGoldDisplay();
-  updateStats();
-  
+  updateDungeonProgress();
+  checkAllComplete();
+
   // 更新主角卡片
   if (protagonist) renderProtagonistCard();
 }
@@ -1367,7 +1612,7 @@ generateAvailablePlayers();
 renderParty();
 updateDungeonDesc();
 updateGoldDisplay();
-updateStats();
+updateDungeonProgress();
 </script>
 </body>
 </html>
